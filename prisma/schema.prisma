@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. User & Wallet (Scenario 2 & 3: Balance Display)
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  phone        String        @unique
+  wallet       Wallet?
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  balance   Decimal  @default(5000.00) @db.Decimal(10, 2)
+  currency  String   @default("PKR")
+  updatedAt DateTime @updatedAt
+}
+
+// 2. Telecoms (Jazz, Zong, Telenor, Ufone)
+model Telecom {
+  id           String                 @id @default(uuid())
+  name         String                 @unique // e.g. "Jazz", "Zong"
+  code         String                 @unique // e.g. "JAZZ", "ZONG"
+  rules        PromotionTelecomRule[]
+  transactions Transaction[]
+}
+
+// 3. Promotions (Scenario 1 & 5: Limit & Race Condition)
+model Promotion {
+  id           String                 @id @default(uuid())
+  code         String                 @unique // e.g. "SUNDAY5", "EID_BONUS"
+  description  String?
+  usageLimit   Int                    @default(1000)
+  currentUsage Int                    @default(0)
+  isActive     Boolean                @default(true)
+  rules        PromotionTelecomRule[]
+  createdAt    DateTime               @default(now())
+}
+
+// 4. Junction Table (Scenario 1: Many-to-Many with custom discounts)
+model PromotionTelecomRule {
+  id            String    @id @default(uuid())
+  promotionId   String
+  telecomId     String
+  promotion     Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  telecom       Telecom   @relation(fields: [telecomId], references: [id], onDelete: Cascade)
+  discountType  String    @default("PERCENTAGE") // "PERCENTAGE" ya "FIXED"
+  discountValue Decimal   @db.Decimal(5, 2)       // e.g. 5.00 (5%) ya 10.00 (10%)
+  maxCap        Decimal?  @db.Decimal(10, 2)      // Maximum Rs. 100 tak discount
+
+  @@unique([promotionId, telecomId]) // Ek promo aur telecom ka ek hi rule hoga
+}
+
+// 5. Transactions (Scenario 4 & 6: Top-up History & Idempotency)
+model Transaction {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  telecomId      String
+  telecom        Telecom  @relation(fields: [telecomId], references: [id])
+  phoneNumber    String   // Top-up number
+  amount         Decimal  @db.Decimal(10, 2) // Asal Amount
+  discountAmount Decimal  @default(0.00) @db.Decimal(10, 2)
+  finalAmount    Decimal  @db.Decimal(10, 2) // Katne wali amount
+  promoCode      String?
+  status         String   @default("COMPLETED") // "PENDING", "COMPLETED", "FAILED"
+  idempotencyKey String?  @unique // Duplicate payment rokne ke liye
+  stripeId       String?  // Stripe deposit track karne ke liye
+  createdAt      DateTime @default(now())
+}
