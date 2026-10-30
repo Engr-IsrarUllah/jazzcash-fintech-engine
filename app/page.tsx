@@ -48,11 +48,16 @@ export default function EasypaisaApp() {
 
   // Alerts & Notifications
   const [feedback, setFeedback] = useState<FeedbackMessage | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 1. Fetch Wallet & Platform Data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (isSilent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const res = await fetch('/api/wallet');
       const data = await res.json();
 
@@ -68,7 +73,11 @@ export default function EasypaisaApp() {
     } catch {
       setFeedback({ type: 'error', message: 'Network connection failed' });
     } finally {
-      setLoading(false);
+      if (isSilent) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -91,7 +100,7 @@ export default function EasypaisaApp() {
                 message: `Shukriya! Rs. ${data.amount} has been added to your Easypaisa Account.`,
               });
               if (data.newBalance) setBalance(data.newBalance);
-              fetchDashboardData();
+              fetchDashboardData(true);
             } else {
               setFeedback({ type: 'error', message: data.error || 'Payment verification failed' });
             }
@@ -353,7 +362,7 @@ export default function EasypaisaApp() {
             type: 'success',
             message: `Deposit of Rs. ${depositAmount} successful!`,
           });
-          fetchDashboardData();
+          fetchDashboardData(true);
         }
       }
     } catch {
@@ -393,7 +402,8 @@ export default function EasypaisaApp() {
           onToggleBalance={() => setShowBalance(!showBalance)}
           onDeposit={handleStripeDeposit}
           depositing={depositing}
-          onRefresh={fetchDashboardData}
+          onRefresh={() => fetchDashboardData(true)}
+          refreshing={refreshing}
         />
 
         {/* 4. Service Switcher Tabs */}
@@ -465,7 +475,11 @@ export default function EasypaisaApp() {
           </div>
 
           {/* Passbook / Statement */}
-          <Passbook transactions={transactions} onRefresh={fetchDashboardData} />
+          <Passbook
+            transactions={transactions}
+            onRefresh={() => fetchDashboardData(true)}
+            refreshing={refreshing}
+          />
         </div>
 
         {/* Trust & Compliance Footer */}

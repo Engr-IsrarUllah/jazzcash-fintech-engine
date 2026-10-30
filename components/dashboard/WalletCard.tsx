@@ -10,6 +10,7 @@ interface WalletCardProps {
   onDeposit: () => void;
   depositing: boolean;
   onRefresh: () => void;
+  refreshing?: boolean;
 }
 
 export function WalletCard({
@@ -19,6 +20,7 @@ export function WalletCard({
   onDeposit,
   depositing,
   onRefresh,
+  refreshing = false,
 }: WalletCardProps) {
   const formattedBalance = Number(balance).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -82,11 +84,13 @@ export function WalletCard({
           </button>
 
           <button
+            type="button"
             onClick={onRefresh}
-            className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all border border-white/15"
+            disabled={refreshing}
+            className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all border border-white/15 disabled:opacity-50"
             title="Refresh Balance"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 transition-transform ${refreshing ? 'animate-spin text-emerald-200' : ''}`} />
           </button>
         </div>
       </div>

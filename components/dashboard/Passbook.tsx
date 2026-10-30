@@ -8,9 +8,10 @@ import { TELECOM_STYLES } from '@/lib/constants';
 interface PassbookProps {
   transactions: Transaction[];
   onRefresh: () => void;
+  refreshing?: boolean;
 }
 
-export function Passbook({ transactions, onRefresh }: PassbookProps) {
+export function Passbook({ transactions, onRefresh, refreshing = false }: PassbookProps) {
   return (
     <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-sm flex flex-col justify-between">
       <div>
@@ -20,11 +21,13 @@ export function Passbook({ transactions, onRefresh }: PassbookProps) {
             <h3 className="text-base font-bold text-slate-900">Recent Activity (لین دین)</h3>
           </div>
           <button
+            type="button"
             onClick={onRefresh}
-            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"
+            disabled={refreshing}
+            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all disabled:opacity-50"
             title="Refresh Activity"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className={`w-3.5 h-3.5 transition-transform ${refreshing ? 'animate-spin text-emerald-600' : ''}`} />
           </button>
         </div>
 
